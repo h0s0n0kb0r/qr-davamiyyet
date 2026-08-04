@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Gate - Davamiyyət</title>
+    <style>
+        body { font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background: #f4f6f9; margin: 0; }
+        .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; width: 300px; }
+        button { background: #4285F4; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-size: 16px; width: 100%; margin-top: 15px; }
+        .success { color: green; font-weight: bold; }
+        .error { color: red; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>Giriş Qeydiyyatı</h2>
+    {% if not email %}
+        <p>Giriş etmək üçün Gmail hesabınızı daxil edin:</p>
+        <input type="email" id="emailInput" placeholder="nümunə@gmail.com" style="width:90%; padding:8px; margin-bottom:10px;">
+        <button onclick="loginWithGoogle()">Google ilə Giriş Et</button>
+    {% else %}
+        <p>Xoş gəldiniz, <br><b>{{ email }}</b></p>
+        <button style="background:#28a745;" onclick="sendLocation()">📍 Girişi Qeydə Al</button>
+    {% endif %}
+
+    <p id="statusMsg"></p>
+</div>
+
+<script>
+// Google Login Simulyasiyası
+async function loginWithGoogle() {
+    const email = document.getElementById('emailInput').value;
+    if(!email) return alert("Zəhmət olmasa email yazın!");
+
+    const res = await fetch('/login-google', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ email: email })
+    });
+    
+    if(res.ok) window.location.reload();
+}
+
+// Brauzerdən GPS alıb Python-a göndərən funksiya
+function sendLocation() {
+    const statusText = document.getElementById('statusMsg');
+    statusText.className = '';
+    statusText.innerText = "Koordinatlar alınır...";
+
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(async (position) => {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+
+            const response = await fetch('/api/check-in', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ latitude: lat, longitude: lng })
+            });
+
+            const result = await response.json();
+            if(response.ok) {
+                statusText.className = 'success';
+                statusText.innerText = result.message;
+            } else {
+                statusText.className = 'error';
+                statusText.innerText = result.message;
+            }
+        }, (error) => {
+            statusText.className = 'error';
+            statusText.innerText = "Məkan icazəsi verilmədi!";
+        });
+    } else {
+        alert("Brauzeriniz geolokasiyanı dəstəkləmir.");
+    }
+}
+</script>
+
+</body>
+</html>

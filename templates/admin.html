@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Davamiyyət</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 30px; background: #f8f9fa; }
+        h2 { color: #333; }
+        table { width: 100%; border-collapse: collapse; background: white; margin-top: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        th, td { padding: 12px 15px; border: 1px solid #ddd; text-align: left; }
+        th { background-color: #007bff; color: white; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        a { color: #007bff; text-decoration: none; font-weight: bold; }
+        a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+    <h2>📌 İşçi Giriş-Çıxış Cədvəli</h2>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Gmail</th>
+                <th>Tarix və Saat</th>
+                <th>Koordinatlar (Lat, Lng)</th>
+                <th>Xəritədə Bax</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in records %}
+            <tr>
+                <td><b>{{ row[0] }}</b></td>
+                <td>{{ row[3] }}</td>
+                <td>{{ row[1] }}, {{ row[2] }}</td>
+                <td>
+                    <a href="https://maps.google.com/?q={{ row[1] }},{{ row[2] }}" target="_blank">
+                        🗺️ Xəritədə Aç
+                    </a>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="4" style="text-align: center;">Hələ heç bir qeyd yoxdur.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+</body>
+</html>
