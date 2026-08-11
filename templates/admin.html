@@ -18,7 +18,12 @@
 <body>
 
     <h2>📌 İşçi Giriş-Çıxış Cədvəli</h2>
-
+<form method="GET" action="/admin" style="margin-bottom: 20px;">
+    <label for="date"><b>Tarix seçin:</b></label>
+    <input type="date" id="date" name="date" value="{{ selected_date if selected_date else '' }}">
+    <button type="submit">Göstər</button>
+    <a href="/admin"><button type="button">Hamısını Göstər</button></a>
+</form>
     <table>
         <thead>
             <tr>
