@@ -5,8 +5,8 @@ import calendar
 import json
 
 # --- ADMİN GİRİŞ MƏLUMATLARI (İstədiyiniz kimi dəyişin) ---
-ADMIN_USERNAME = "admin"
-ADMIN_PASSWORD = "123"
+ADMIN_USERNAME = "elshad"
+ADMIN_PASSWORD = "3lsh@d"
 
 # Azərbaycan vaxt zonası (UTC+4) təyin olundu
 AZ_TZ = timezone(timedelta(hours=4))
