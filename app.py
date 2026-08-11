@@ -77,15 +77,26 @@ def check_in():
 
 # --- 3. ADMİN PANELDƏKİ CƏDVƏL ---
 @app.route('/admin')
+@app.route('/admin')
 def admin_panel():
+    selected_date = request.args.get('date')
     conn = sqlite3.connect('attendance.db')
     cursor = conn.cursor()
-    cursor.execute('SELECT email, latitude, longitude, timestamp FROM attendance ORDER BY id DESC')
+
+    if selected_date:
+        cursor.execute('''
+            SELECT email, latitude, longitude, timestamp 
+            FROM attendance 
+            WHERE timestamp LIKE ? 
+            ORDER BY id DESC
+        ''', (f"{selected_date}%",))
+    else:
+        cursor.execute('SELECT email, latitude, longitude, timestamp FROM attendance ORDER BY id DESC')
+
     records = cursor.fetchall()
     conn.close()
 
-    return render_template('admin.html', records=records)
-
+    return render_template('admin.html', records=records, selected_date=selected_date)
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
