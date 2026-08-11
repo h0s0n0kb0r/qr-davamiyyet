@@ -1,10 +1,10 @@
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session
 import sqlite3
-# 1. timezone və timedelta import edildi:
 from datetime import datetime, timezone, timedelta 
+import calendar
 import json
 
-# 2. Azərbaycan vaxt zonası (UTC+4) təyin olundu:
+# Azərbaycan vaxt zonası (UTC+4) təyin olundu
 AZ_TZ = timezone(timedelta(hours=4))
 
 app = Flask(__name__)
@@ -59,7 +59,7 @@ def check_in():
     lat = data.get('latitude')
     lng = data.get('longitude')
     
-    # İndi Bakı saatı düzgün işləyəcək:
+    # Bakı saatı ilə qeyd
     now = datetime.now(AZ_TZ).strftime("%Y-%m-%d %H:%M:%S")
 
     # Bazaya qeyd edirik
@@ -75,14 +75,31 @@ def check_in():
     return jsonify({"status": "success", "message": "Girişiniz uğurla qeydə alındı!"})
 
 
-# --- 3. ADMİN PANELDƏKİ CƏDVƏL ---
-@app.route('/admin')
+# --- 3. ADMİN PANEL VƏ AYLIQ TƏQVİM ---
 @app.route('/admin')
 def admin_panel():
-    selected_date = request.args.get('date')
+    selected_date = request.args.get('date')  # Format: YYYY-MM-DD
+    
+    # Cari vaxt, il və ay
+    now = datetime.now(AZ_TZ)
+    year = request.args.get('year', type=int, default=now.year)
+    month = request.args.get('month', type=int, default=now.month)
+    
+    # Ayın neçə gündən ibarət olduğunu hesablayırıq
+    num_days = calendar.monthrange(year, month)[1]
+    
+    # Ayın bütün tarixlərini siyahı şəklində hazırlayırıq
+    days_in_month = []
+    for day in range(1, num_days + 1):
+        day_str = f"{year}-{month:02d}-{day:02d}"
+        days_in_month.append({
+            "day_number": day,
+            "date_str": day_str
+        })
+
     conn = sqlite3.connect('attendance.db')
     cursor = conn.cursor()
-
+    
     if selected_date:
         cursor.execute('''
             SELECT email, latitude, longitude, timestamp 
@@ -91,12 +108,27 @@ def admin_panel():
             ORDER BY id DESC
         ''', (f"{selected_date}%",))
     else:
-        cursor.execute('SELECT email, latitude, longitude, timestamp FROM attendance ORDER BY id DESC')
+        # Əgər tarix seçilməyibsə, defolt olaraq bugünkü qeydləri göstərir
+        today_str = now.strftime("%Y-%m-%d")
+        cursor.execute('''
+            SELECT email, latitude, longitude, timestamp 
+            FROM attendance 
+            WHERE timestamp LIKE ? 
+            ORDER BY id DESC
+        ''', (f"{today_str}%",))
+        selected_date = today_str
 
     records = cursor.fetchall()
     conn.close()
 
-    return render_template('admin.html', records=records, selected_date=selected_date)
+    return render_template(
+        'admin.html', 
+        records=records, 
+        days=days_in_month, 
+        selected_date=selected_date,
+        current_month=f"{year}-{month:02d}"
+    )
+
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
