@@ -3,55 +3,83 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Panel - Davamiyyət</title>
+    <title>Admin Panel - Davamiyyət Təqvimi</title>
     <style>
-        body { font-family: Arial, sans-serif; padding: 30px; background: #f8f9fa; }
-        h2 { color: #333; }
-        table { width: 100%; border-collapse: collapse; background: white; margin-top: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        th, td { padding: 12px 15px; border: 1px solid #ddd; text-align: left; }
-        th { background-color: #007bff; color: white; }
-        tr:nth-child(even) { background-color: #f9f9f9; }
-        a { color: #007bff; text-decoration: none; font-weight: bold; }
-        a:hover { text-decoration: underline; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #f8f9fa; }
+        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: #333; }
+        
+        /* Təqvim Grid Dizaynı */
+        .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-bottom: 25px; }
+        .day-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 12px;
+            background: #e9ecef;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            text-decoration: none;
+            color: #495057;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        .day-btn:hover { background: #dee2e6; transform: translateY(-2px); }
+        .day-btn.active { background: #0d6efd; color: white; border-color: #0d6efd; }
+        
+        /* Cədvəl Dizaynı */
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #dee2e6; padding: 12px; text-align: left; }
+        th { background-color: #343a40; color: white; }
+        tr:nth-child(even) { background-color: #f8f9fa; }
+        .no-data { text-align: center; color: #6c757d; font-style: italic; padding: 20px; }
     </style>
 </head>
 <body>
 
-    <h2>📌 İşçi Giriş-Çıxış Cədvəli</h2>
-<form method="GET" action="/admin" style="margin-bottom: 20px;">
-    <label for="date"><b>Tarix seçin:</b></label>
-    <input type="date" id="date" name="date" value="{{ selected_date if selected_date else '' }}">
-    <button type="submit">Göstər</button>
-    <a href="/admin"><button type="button">Hamısını Göstər</button></a>
-</form>
+<div class="container">
+    <h2>Davamiyyət Təqvimi ({{ current_month }})</h2>
+
+    <!-- AYIN GÜNLƏRİ SİYAHISI -->
+    <div class="calendar-grid">
+        {% for day in days %}
+            <a href="/admin?date={{ day.date_str }}" 
+               class="day-btn {% if day.date_str == selected_date %}active{% endif %}">
+               <span>{{ day.day_number }}</span>
+            </a>
+        {% endfor %}
+    </div>
+
+    <h3>Seçilmiş Tarix: <span style="color: #0d6efd;">{{ selected_date }}</span></h3>
+
+    <!-- DAVAMİYYƏT CƏDVƏLİ -->
     <table>
         <thead>
             <tr>
-                <th>Gmail</th>
-                <th>Tarix və Saat</th>
-                <th>Koordinatlar (Lat, Lng)</th>
-                <th>Xəritədə Bax</th>
+                <th>Email</th>
+                <th>Enlik (Lat)</th>
+                <th>Uzunluq (Lng)</th>
+                <th>Giriş Saatı</th>
             </tr>
         </thead>
         <tbody>
-            {% for row in records %}
+            {% for record in records %}
             <tr>
-                <td><b>{{ row[0] }}</b></td>
-                <td>{{ row[3] }}</td>
-                <td>{{ row[1] }}, {{ row[2] }}</td>
-                <td>
-                    <a href="https://maps.google.com/?q={{ row[1] }},{{ row[2] }}" target="_blank">
-                        🗺️ Xəritədə Aç
-                    </a>
-                </td>
+                <td>{{ record[0] }}</td>
+                <td>{{ record[1] }}</td>
+                <td>{{ record[2] }}</td>
+                <td>{{ record[3] }}</td>
             </tr>
             {% else %}
             <tr>
-                <td colspan="4" style="text-align: center;">Hələ heç bir qeyd yoxdur.</td>
+                <td colspan="4" class="no-data">Bu tarix üçün heç bir qeydiyyat tapılmadı.</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
+</div>
 
 </body>
 </html>
