@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Giriş Səhifəsi</title>
+    <title>Davamiyyəti Qeydə Al</title>
     <style>
         body { 
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
@@ -22,135 +22,90 @@
             border: 1px solid #f8d7da;
             width: 100%; 
             max-width: 380px; 
+            text-align: center;
         }
-        h3 { 
-            text-align: center; 
-            margin-bottom: 25px; 
-            color: #dc3545; 
-            font-size: 24px;
-            font-weight: 700;
-        }
-        .form-group { margin-bottom: 18px; }
-        label { 
-            display: block; 
-            margin-bottom: 6px; 
-            font-weight: 600; 
-            color: #495057; 
-            font-size: 14px;
-        }
-        input { 
+        h3 { color: #dc3545; margin-bottom: 5px; }
+        p.user-info { color: #6c757d; font-size: 14px; margin-bottom: 25px; }
+        .btn-checkin { 
             width: 100%; 
-            padding: 11px; 
-            border: 1px solid #ced4da; 
-            border-radius: 6px; 
-            box-sizing: border-box; 
-            transition: border-color 0.2s, box-shadow 0.2s;
-        }
-        input:focus {
-            outline: none;
-            border-color: #dc3545;
-            box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.2);
-        }
-        .btn-red { 
-            width: 100%; 
-            padding: 12px; 
+            padding: 15px; 
             background-color: #dc3545; 
             color: white; 
             border: none; 
-            border-radius: 6px; 
+            border-radius: 8px; 
             font-weight: bold; 
             cursor: pointer; 
-            font-size: 16px; 
-            margin-top: 10px; 
+            font-size: 18px; 
             transition: background-color 0.2s;
         }
-        .btn-red:hover { background-color: #bb2d3b; }
-        
-        .btn-outline {
-            width: 100%; 
-            padding: 11px; 
-            background-color: #ffffff; 
-            color: #dc3545; 
-            border: 2px solid #dc3545; 
-            border-radius: 6px; 
-            font-weight: bold; 
-            cursor: pointer; 
-            font-size: 15px; 
-            margin-top: 12px; 
-            transition: all 0.2s;
-        }
-        .btn-outline:hover {
-            background-color: #dc3545;
-            color: #ffffff;
-        }
-
-        .error { 
-            color: #842029; 
-            background-color: #f8d7da; 
-            border: 1px solid #f5c2c7;
-            padding: 10px; 
-            border-radius: 6px; 
-            margin-bottom: 18px; 
-            text-align: center; 
-            font-size: 14px; 
-        }
-        .divider { 
-            text-align: center; 
-            margin: 18px 0; 
-            color: #a7acb1; 
-            font-size: 13px; 
-            font-weight: 600;
-        }
-        .link { text-align: center; margin-top: 20px; font-size: 14px; color: #6c757d; }
-        .link a { color: #dc3545; text-decoration: none; font-weight: bold; }
-        .link a:hover { text-decoration: underline; }
+        .btn-checkin:hover { background-color: #bb2d3b; }
+        .btn-checkin:disabled { background-color: #6c757d; cursor: not-allowed; }
+        #status { margin-top: 20px; font-weight: bold; font-size: 15px; }
+        .logout-link { display: inline-block; margin-top: 25px; color: #6c757d; text-decoration: none; font-size: 14px; }
+        .logout-link:hover { color: #dc3545; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h3>Davamiyyət Girişi</h3>
+    <h3>Xoş gəldiniz!</h3>
+    <p class="user-info">Aktiv hesab: <b>{{ email }}</b></p>
 
-    {% if error %}
-        <div class="error">{{ error }}</div>
-    {% endif %}
+    <button id="checkin-btn" class="btn-checkin" onclick="sendLocation()">📍 Girişi Qeydə Al</button>
 
-    <form method="POST" action="/login">
-        <div class="form-group">
-            <label for="email">Gmail Adresi:</label>
-            <input type="email" id="email" name="email" placeholder="ornek@gmail.com" required>
-        </div>
-        <div class="form-group">
-            <label for="password">Şifrə:</label>
-            <input type="password" id="password" name="password" placeholder="••••••••" required>
-        </div>
-        <button type="submit" class="btn-red">Daxil ol</button>
-    </form>
+    <div id="status"></div>
 
-    <div class="divider">VƏ YA</div>
-
-    <button onclick="promptGoogleLogin()" class="btn-outline">🚀 Google ilə Giriş Et</button>
-
-    <div class="link">
-        Hesabınız yoxdur? <a href="/register">Qeydiyyatdan keçin</a>
-    </div>
+    <a href="/logout" class="logout-link">🚪 Hesabdan Çıxış Et</a>
 </div>
 
 <script>
-function promptGoogleLogin() {
-    let email = prompt("Google Email adresinizi daxil edin:");
-    if (email) {
-        fetch('/login-google', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: email })
-        }).then(res => res.json()).then(data => {
-            if(data.status === 'success') {
-                window.location.href = '/';
-            } else {
-                alert('Giriş alınmadı!');
-            }
-        });
+function sendLocation() {
+    const btn = document.getElementById('checkin-btn');
+    const status = document.getElementById('status');
+
+    btn.disabled = true;
+    status.style.color = "#0d6efd";
+    status.innerText = "Lokasiya təyin olunur, xahiş olunur gözləyin...";
+
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+
+                fetch('/api/check-in', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ latitude: lat, longitude: lng })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        status.style.color = "#198754";
+                        status.innerText = "✅ " + data.message;
+                    } else {
+                        status.style.color = "#dc3545";
+                        status.innerText = "❌ " + data.message;
+                    }
+                    btn.disabled = false;
+                })
+                .catch(err => {
+                    status.style.color = "#dc3545";
+                    status.innerText = "❌ Xəta baş verdi. Yenidən cəhd edin.";
+                    btn.disabled = false;
+                });
+            },
+            function(error) {
+                status.style.color = "#dc3545";
+                status.innerText = "❌ Lokasiyaya icazə verilmədi! Zəhmət olmasa telefonunuzun GPS-ini və brauzer icazəsini açın.";
+                btn.disabled = false;
+            },
+            { enableHighAccuracy: true, timeout: 10000 }
+        );
+    } else {
+        status.style.color = "#dc3545";
+        status.innerText = "❌ Cihazınız GPS lokasiyanı dəstəkləmir.";
+        btn.disabled = false;
     }
 }
 </script>
