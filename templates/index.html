@@ -3,77 +3,154 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QR Gate - Davamiyyət</title>
+    <title>Giriş Səhifəsi</title>
     <style>
-        body { font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background: #f4f6f9; margin: 0; }
-        .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; width: 300px; }
-        button { background: #4285F4; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-size: 16px; width: 100%; margin-top: 15px; }
-        .success { color: green; font-weight: bold; }
-        .error { color: red; font-weight: bold; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background-color: #fff5f5; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            min-height: 100vh; 
+            margin: 0; 
+        }
+        .card { 
+            background: #ffffff; 
+            padding: 35px 30px; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 20px rgba(220, 53, 69, 0.12); 
+            border: 1px solid #f8d7da;
+            width: 100%; 
+            max-width: 380px; 
+        }
+        h3 { 
+            text-align: center; 
+            margin-bottom: 25px; 
+            color: #dc3545; 
+            font-size: 24px;
+            font-weight: 700;
+        }
+        .form-group { margin-bottom: 18px; }
+        label { 
+            display: block; 
+            margin-bottom: 6px; 
+            font-weight: 600; 
+            color: #495057; 
+            font-size: 14px;
+        }
+        input { 
+            width: 100%; 
+            padding: 11px; 
+            border: 1px solid #ced4da; 
+            border-radius: 6px; 
+            box-sizing: border-box; 
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        input:focus {
+            outline: none;
+            border-color: #dc3545;
+            box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.2);
+        }
+        .btn-red { 
+            width: 100%; 
+            padding: 12px; 
+            background-color: #dc3545; 
+            color: white; 
+            border: none; 
+            border-radius: 6px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            font-size: 16px; 
+            margin-top: 10px; 
+            transition: background-color 0.2s;
+        }
+        .btn-red:hover { background-color: #bb2d3b; }
+        
+        .btn-outline {
+            width: 100%; 
+            padding: 11px; 
+            background-color: #ffffff; 
+            color: #dc3545; 
+            border: 2px solid #dc3545; 
+            border-radius: 6px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            font-size: 15px; 
+            margin-top: 12px; 
+            transition: all 0.2s;
+        }
+        .btn-outline:hover {
+            background-color: #dc3545;
+            color: #ffffff;
+        }
+
+        .error { 
+            color: #842029; 
+            background-color: #f8d7da; 
+            border: 1px solid #f5c2c7;
+            padding: 10px; 
+            border-radius: 6px; 
+            margin-bottom: 18px; 
+            text-align: center; 
+            font-size: 14px; 
+        }
+        .divider { 
+            text-align: center; 
+            margin: 18px 0; 
+            color: #a7acb1; 
+            font-size: 13px; 
+            font-weight: 600;
+        }
+        .link { text-align: center; margin-top: 20px; font-size: 14px; color: #6c757d; }
+        .link a { color: #dc3545; text-decoration: none; font-weight: bold; }
+        .link a:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h2>Giriş Qeydiyyatı</h2>
-    {% if not email %}
-        <p>Giriş etmək üçün Gmail hesabınızı daxil edin:</p>
-        <input type="email" id="emailInput" placeholder="nümunə@gmail.com" style="width:90%; padding:8px; margin-bottom:10px;">
-        <button onclick="loginWithGoogle()">Google ilə Giriş Et</button>
-    {% else %}
-        <p>Xoş gəldiniz, <br><b>{{ email }}</b></p>
-        <button style="background:#28a745;" onclick="sendLocation()">📍 Girişi Qeydə Al</button>
+    <h3>Davamiyyət Girişi</h3>
+
+    {% if error %}
+        <div class="error">{{ error }}</div>
     {% endif %}
 
-    <p id="statusMsg"></p>
+    <form method="POST" action="/login">
+        <div class="form-group">
+            <label for="email">Gmail Adresi:</label>
+            <input type="email" id="email" name="email" placeholder="ornek@gmail.com" required>
+        </div>
+        <div class="form-group">
+            <label for="password">Şifrə:</label>
+            <input type="password" id="password" name="password" placeholder="••••••••" required>
+        </div>
+        <button type="submit" class="btn-red">Daxil ol</button>
+    </form>
+
+    <div class="divider">VƏ YA</div>
+
+    <button onclick="promptGoogleLogin()" class="btn-outline">🚀 Google ilə Giriş Et</button>
+
+    <div class="link">
+        Hesabınız yoxdur? <a href="/register">Qeydiyyatdan keçin</a>
+    </div>
 </div>
 
 <script>
-// Google Login Simulyasiyası
-async function loginWithGoogle() {
-    const email = document.getElementById('emailInput').value;
-    if(!email) return alert("Zəhmət olmasa email yazın!");
-
-    const res = await fetch('/login-google', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ email: email })
-    });
-    
-    if(res.ok) window.location.reload();
-}
-
-// Brauzerdən GPS alıb Python-a göndərən funksiya
-function sendLocation() {
-    const statusText = document.getElementById('statusMsg');
-    statusText.className = '';
-    statusText.innerText = "Koordinatlar alınır...";
-
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(async (position) => {
-            const lat = position.coords.latitude;
-            const lng = position.coords.longitude;
-
-            const response = await fetch('/api/check-in', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ latitude: lat, longitude: lng })
-            });
-
-            const result = await response.json();
-            if(response.ok) {
-                statusText.className = 'success';
-                statusText.innerText = result.message;
+function promptGoogleLogin() {
+    let email = prompt("Google Email adresinizi daxil edin:");
+    if (email) {
+        fetch('/login-google', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email })
+        }).then(res => res.json()).then(data => {
+            if(data.status === 'success') {
+                window.location.href = '/';
             } else {
-                statusText.className = 'error';
-                statusText.innerText = result.message;
+                alert('Giriş alınmadı!');
             }
-        }, (error) => {
-            statusText.className = 'error';
-            statusText.innerText = "Məkan icazəsi verilmədi!";
         });
-    } else {
-        alert("Brauzeriniz geolokasiyanı dəstəkləmir.");
     }
 }
 </script>
