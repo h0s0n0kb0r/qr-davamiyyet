@@ -4,8 +4,8 @@ from datetime import datetime, timezone, timedelta
 import calendar
 
 # Admin Panel Giriş Məlumatları
-ADMIN_USERNAME = "admin"
-ADMIN_PASSWORD = "123"
+ADMIN_USERNAME = "elshad"
+ADMIN_PASSWORD = "Baku2025@"
 
 # Azərbaycan Vaxt Qurşağı (UTC+4)
 AZ_TZ = timezone(timedelta(hours=4))
