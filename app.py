@@ -8,7 +8,7 @@ import json
 # SİSTEM TƏNZİMLƏMƏLƏRİ
 # ==============================================================================
 
-# Admin Panel Giriş Məlumatları (İstədiyiniz kimi dəyişə bilərsiniz)
+# Admin Panel Giriş Məlumatları
 ADMIN_USERNAME = "admin"
 ADMIN_PASSWORD = "123"
 
@@ -17,6 +17,7 @@ AZ_TZ = timezone(timedelta(hours=4))
 
 app = Flask(__name__)
 app.secret_key = "super_gizli_secret_key_bura_yazin"
+app.permanent_session_lifetime = timedelta(days=90)  # Giriş 90 gün aktiv qalsın
 
 
 # ==============================================================================
@@ -61,7 +62,7 @@ def init_db():
     conn = sqlite3.connect('attendance.db')
     cursor = conn.cursor()
     
-    # Davamiyyət Cədvəli (device sütunu əlavə olundu)
+    # Davamiyyət Cədvəli
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS attendance (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -73,6 +74,16 @@ def init_db():
         )
     ''')
     
+    # İstifadəçilər Cədvəli
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            email TEXT UNIQUE NOT NULL,
+            password TEXT NOT NULL
+        )
+    ''')
+    
     conn.commit()
     conn.close()
 
@@ -80,42 +91,112 @@ init_db()
 
 
 # ==============================================================================
-# SƏHİFƏLƏR VƏ MARŞRUTLAR
+# İSTİFADƏÇİ VƏ QEYDİYYAT MARŞRUTLARI
 # ==============================================================================
 
 @app.route('/')
 def home():
     user_email = session.get('user_email')
+    if not user_email:
+        return redirect(url_for('login_page'))
     return render_template('index.html', email=user_email)
 
 
-# Google Login / Email Saxlama
+@app.route('/register', methods=['GET', 'POST'])
+def register_page():
+    if request.method == 'POST':
+        name = request.form.get('name')
+        email = request.form.get('email').strip().lower()
+        password = request.form.get('password')
+
+        conn = sqlite3.connect('attendance.db')
+        cursor = conn.cursor()
+        
+        # Emailin artıq bazada olub-olmadığını yoxlayırıq
+        cursor.execute('SELECT id FROM users WHERE email = ?', (email,))
+        if cursor.fetchone():
+            conn.close()
+            return render_template('register.html', error="Bu Gmail adresi artıq qeydiyyatdan keçib!")
+
+        # Yeni istifadəçini qeyd edirik
+        cursor.execute('INSERT INTO users (name, email, password) VALUES (?, ?, ?)', (name, email, password))
+        conn.commit()
+        conn.close()
+
+        # Avtomatik giriş etdirib ana səhifəyə atırıq
+        session.permanent = True
+        session['user_email'] = email
+        return redirect(url_for('home'))
+
+    return render_template('register.html')
+
+
+@app.route('/login', methods=['GET', 'POST'])
+def login_page():
+    if request.method == 'POST':
+        email = request.form.get('email').strip().lower()
+        password = request.form.get('password')
+
+        conn = sqlite3.connect('attendance.db')
+        cursor = conn.cursor()
+        cursor.execute('SELECT email FROM users WHERE email = ? AND password = ?', (email, password))
+        user = cursor.fetchone()
+        conn.close()
+
+        if user:
+            session.permanent = True
+            session['user_email'] = user[0]
+            return redirect(url_for('home'))
+        else:
+            return render_template('login.html', error="Gmail və ya şifrə yanlışdır!")
+
+    return render_template('login.html')
+
+
 @app.route('/login-google', methods=['POST'])
 def google_login():
     data = request.json
-    session['user_email'] = data.get('email')
-    return jsonify({"status": "success", "email": session['user_email']})
+    email = data.get('email')
+
+    if email:
+        email = email.strip().lower()
+        conn = sqlite3.connect('attendance.db')
+        cursor = conn.cursor()
+        cursor.execute('SELECT email FROM users WHERE email = ?', (email,))
+        user = cursor.fetchone()
+
+        if not user:
+            cursor.execute('INSERT INTO users (name, email, password) VALUES (?, ?, ?)', ('Google User', email, 'GOOGLE_AUTH'))
+            conn.commit()
+        conn.close()
+
+        session.permanent = True
+        session['user_email'] = email
+        return jsonify({"status": "success"})
+
+    return jsonify({"status": "error", "message": "Email daxil edilməyib"}), 400
 
 
-# Məkana və Cihaza Görə Girişi Bazaya Yazacaq API
+@app.route('/logout')
+def logout():
+    session.pop('user_email', None)
+    return redirect(url_for('login_page'))
+
+
 @app.route('/api/check-in', methods=['POST'])
 def check_in():
     email = session.get('user_email')
     if not email:
-        return jsonify({"status": "error", "message": "İlk öncə Gmail ilə daxil olun!"}), 401
+        return jsonify({"status": "error", "message": "İlk öncə daxil olun!"}), 401
 
     data = request.json
     lat = data.get('latitude')
     lng = data.get('longitude')
-    
-    # Bakı vaxtı ilə saat
     now = datetime.now(AZ_TZ).strftime("%Y-%m-%d %H:%M:%S")
 
-    # Telefon markasını / cihazı təyin edirik
     user_agent = request.headers.get('User-Agent', '')
     device_name = detect_device(user_agent)
 
-    # Bazaya qeyd edirik
     conn = sqlite3.connect('attendance.db')
     cursor = conn.cursor()
     cursor.execute('''
@@ -129,7 +210,7 @@ def check_in():
 
 
 # ==============================================================================
-# ADMİN PANEL MARŞRUTLARI (Login, Logout, Təqvim & Cədvəl)
+# ADMİN PANEL MARŞRUTLARI
 # ==============================================================================
 
 @app.route('/admin/login', methods=['GET', 'POST'])
