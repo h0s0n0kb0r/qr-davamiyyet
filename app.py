@@ -2,11 +2,6 @@ from flask import Flask, render_template, request, jsonify, redirect, url_for, s
 import sqlite3
 from datetime import datetime, timezone, timedelta
 import calendar
-import json
-
-# ==============================================================================
-# SİSTEM TƏNZİMLƏMƏLƏRİ
-# ==============================================================================
 
 # Admin Panel Giriş Məlumatları
 ADMIN_USERNAME = "admin"
@@ -17,12 +12,8 @@ AZ_TZ = timezone(timedelta(hours=4))
 
 app = Flask(__name__)
 app.secret_key = "super_gizli_secret_key_bura_yazin"
-app.permanent_session_lifetime = timedelta(days=90)  # Giriş 90 gün aktiv qalsın
+app.permanent_session_lifetime = timedelta(days=90)
 
-
-# ==============================================================================
-# CİHAZ (TELEFON MARKASI) TƏYİN EDƏN FUNKSİYA
-# ==============================================================================
 
 def detect_device(user_agent_str):
     ua = user_agent_str.lower()
@@ -54,15 +45,10 @@ def detect_device(user_agent_str):
         return "❓ Məlum Olmayan Cihaz"
 
 
-# ==============================================================================
-# MƏLUMAT BAZASININ QURULMASI
-# ==============================================================================
-
 def init_db():
     conn = sqlite3.connect('attendance.db')
     cursor = conn.cursor()
     
-    # Davamiyyət Cədvəli
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS attendance (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -74,7 +60,6 @@ def init_db():
         )
     ''')
     
-    # İstifadəçilər Cədvəli
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -89,10 +74,6 @@ def init_db():
 
 init_db()
 
-
-# ==============================================================================
-# İSTİFADƏÇİ VƏ QEYDİYYAT MARŞRUTLARI
-# ==============================================================================
 
 @app.route('/')
 def home():
@@ -111,19 +92,15 @@ def register_page():
 
         conn = sqlite3.connect('attendance.db')
         cursor = conn.cursor()
-        
-        # Emailin artıq bazada olub-olmadığını yoxlayırıq
         cursor.execute('SELECT id FROM users WHERE email = ?', (email,))
         if cursor.fetchone():
             conn.close()
             return render_template('register.html', error="Bu Gmail adresi artıq qeydiyyatdan keçib!")
 
-        # Yeni istifadəçini qeyd edirik
         cursor.execute('INSERT INTO users (name, email, password) VALUES (?, ?, ?)', (name, email, password))
         conn.commit()
         conn.close()
 
-        # Avtomatik giriş etdirib ana səhifəyə atırıq
         session.permanent = True
         session['user_email'] = email
         return redirect(url_for('home'))
@@ -151,30 +128,6 @@ def login_page():
             return render_template('login.html', error="Gmail və ya şifrə yanlışdır!")
 
     return render_template('login.html')
-
-
-@app.route('/login-google', methods=['POST'])
-def google_login():
-    data = request.json
-    email = data.get('email')
-
-    if email:
-        email = email.strip().lower()
-        conn = sqlite3.connect('attendance.db')
-        cursor = conn.cursor()
-        cursor.execute('SELECT email FROM users WHERE email = ?', (email,))
-        user = cursor.fetchone()
-
-        if not user:
-            cursor.execute('INSERT INTO users (name, email, password) VALUES (?, ?, ?)', ('Google User', email, 'GOOGLE_AUTH'))
-            conn.commit()
-        conn.close()
-
-        session.permanent = True
-        session['user_email'] = email
-        return jsonify({"status": "success"})
-
-    return jsonify({"status": "error", "message": "Email daxil edilməyib"}), 400
 
 
 @app.route('/logout')
@@ -208,10 +161,6 @@ def check_in():
 
     return jsonify({"status": "success", "message": "Girişiniz uğurla qeydə alındı!"})
 
-
-# ==============================================================================
-# ADMİN PANEL MARŞRUTLARI
-# ==============================================================================
 
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
