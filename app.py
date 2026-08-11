@@ -1,7 +1,11 @@
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session
 import sqlite3
-from datetime import datetime
+# 1. timezone və timedelta import edildi:
+from datetime import datetime, timezone, timedelta 
 import json
+
+# 2. Azərbaycan vaxt zonası (UTC+4) təyin olundu:
+AZ_TZ = timezone(timedelta(hours=4))
 
 app = Flask(__name__)
 app.secret_key = "super_gizli_secret_key_bura_yazin"
@@ -12,31 +16,14 @@ def init_db():
     conn = sqlite3.connect('attendance.db')
     cursor = conn.cursor()
     cursor.execute('''
-                   CREATE TABLE IF NOT EXISTS attendance
-                   (
-                       id
-                       INTEGER
-                       PRIMARY
-                       KEY
-                       AUTOINCREMENT,
-                       email
-                       TEXT
-                       NOT
-                       NULL,
-                       latitude
-                       REAL
-                       NOT
-                       NULL,
-                       longitude
-                       REAL
-                       NOT
-                       NULL,
-                       timestamp
-                       TEXT
-                       NOT
-                       NULL
-                   )
-                   ''')
+        CREATE TABLE IF NOT EXISTS attendance (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            email TEXT NOT NULL,
+            latitude REAL NOT NULL,
+            longitude REAL NOT NULL,
+            timestamp TEXT NOT NULL
+        )
+    ''')
     conn.commit()
     conn.close()
 
@@ -54,11 +41,9 @@ def home():
 
 
 # Fake/Simulyasiya edilmiş Google Login (Test üçün)
-# Real layihədə bura Google OAuth callback koda bağlanır
 @app.route('/login-google', methods=['POST'])
 def google_login():
     data = request.json
-    # Google-dan gələn email-i sessiyada saxlayırıq
     session['user_email'] = data.get('email')
     return jsonify({"status": "success", "email": session['user_email']})
 
@@ -73,15 +58,17 @@ def check_in():
     data = request.json
     lat = data.get('latitude')
     lng = data.get('longitude')
-    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    # İndi Bakı saatı düzgün işləyəcək:
+    now = datetime.now(AZ_TZ).strftime("%Y-%m-%d %H:%M:%S")
 
     # Bazaya qeyd edirik
     conn = sqlite3.connect('attendance.db')
     cursor = conn.cursor()
     cursor.execute('''
-                   INSERT INTO attendance (email, latitude, longitude, timestamp)
-                   VALUES (?, ?, ?, ?)
-                   ''', (email, lat, lng, now))
+        INSERT INTO attendance (email, latitude, longitude, timestamp)
+        VALUES (?, ?, ?, ?)
+    ''', (email, lat, lng, now))
     conn.commit()
     conn.close()
 
