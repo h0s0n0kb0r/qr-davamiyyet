@@ -6,7 +6,7 @@ import json
 
 # --- ADMİN GİRİŞ MƏLUMATLARI (İstədiyiniz kimi dəyişin) ---
 ADMIN_USERNAME = "elshad"
-ADMIN_PASSWORD = "3lsh@d"
+ADMIN_PASSWORD = "Baku2025@"
 
 # Azərbaycan vaxt zonası (UTC+4) təyin olundu
 AZ_TZ = timezone(timedelta(hours=4))
