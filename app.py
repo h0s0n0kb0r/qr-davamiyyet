@@ -4,6 +4,10 @@ from datetime import datetime, timezone, timedelta
 import calendar
 import json
 
+# --- ADMİN GİRİŞ MƏLUMATLARI (İstədiyiniz kimi dəyişin) ---
+ADMIN_USERNAME = "admin"
+ADMIN_PASSWORD = "123"
+
 # Azərbaycan vaxt zonası (UTC+4) təyin olundu
 AZ_TZ = timezone(timedelta(hours=4))
 
@@ -35,12 +39,11 @@ init_db()
 
 @app.route('/')
 def home():
-    # İşçinin daxil olduğu əsas səhifə
     user_email = session.get('user_email')
     return render_template('index.html', email=user_email)
 
 
-# Fake/Simulyasiya edilmiş Google Login (Test üçün)
+# Google Login Simulyasiyası
 @app.route('/login-google', methods=['POST'])
 def google_login():
     data = request.json
@@ -59,10 +62,8 @@ def check_in():
     lat = data.get('latitude')
     lng = data.get('longitude')
     
-    # Bakı saatı ilə qeyd
     now = datetime.now(AZ_TZ).strftime("%Y-%m-%d %H:%M:%S")
 
-    # Bazaya qeyd edirik
     conn = sqlite3.connect('attendance.db')
     cursor = conn.cursor()
     cursor.execute('''
@@ -75,16 +76,41 @@ def check_in():
     return jsonify({"status": "success", "message": "Girişiniz uğurla qeydə alındı!"})
 
 
-# --- 3. ADMİN PANEL VƏ AYLIQ TƏQVİM ---
-@app.route('/admin')
-# --- 3. ADMİN PANEL VƏ AYLIQ TƏQVİM ---
+# --- 3. ADMİN GİRİŞ VƏ ÇIXIŞ MARŞRUTLARI ---
+
+@app.route('/admin/login', methods=['GET', 'POST'])
+def admin_login():
+    error = None
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        
+        if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
+            session['admin_logged_in'] = True
+            return redirect(url_for('admin_panel'))
+        else:
+            error = "İstifadəçi adı və ya şifrə yanlışdır!"
+            
+    return render_template('admin_login.html', error=error)
+
+
+@app.route('/admin/logout')
+def admin_logout():
+    session.pop('admin_logged_in', None)
+    return redirect(url_for('admin_login'))
+
+
+# --- 4. ADMİN PANEL VƏ AYLIQ TƏQVİM (QORUNAN SƏHİFƏ) ---
 @app.route('/admin')
 def admin_panel():
+    # Admin giriş etməyibsə login səhifəsinə yönləndir
+    if not session.get('admin_logged_in'):
+        return redirect(url_for('admin_login'))
+
     now = datetime.now(AZ_TZ)
     selected_date = request.args.get('date')          # Format: YYYY-MM-DD
     month_str = request.args.get('month_picker')      # Format: YYYY-MM
 
-    # Ay və ili müəyyən edirik
     if selected_date:
         parts = selected_date.split('-')
         year, month = int(parts[0]), int(parts[1])
@@ -96,10 +122,8 @@ def admin_panel():
         year, month = now.year, now.month
         selected_date = now.strftime("%Y-%m-%d")
 
-    # Seçilən ayın neçə gündən ibarət olduğunu hesablayırıq
     num_days = calendar.monthrange(year, month)[1]
     
-    # Ayın bütün günlərini hazırlayırıq
     days_in_month = []
     for day in range(1, num_days + 1):
         day_str = f"{year}-{month:02d}-{day:02d}"
@@ -111,7 +135,6 @@ def admin_panel():
     conn = sqlite3.connect('attendance.db')
     cursor = conn.cursor()
     
-    # Seçilmiş günün məlumatlarını götürürük
     cursor.execute('''
         SELECT email, latitude, longitude, timestamp 
         FROM attendance 
@@ -129,6 +152,7 @@ def admin_panel():
         selected_date=selected_date,
         current_month_str=f"{year}-{month:02d}"
     )
+
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
