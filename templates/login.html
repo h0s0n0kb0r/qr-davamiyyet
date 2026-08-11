@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Giriş Səhifəsi</title>
+    <title>Davamiyyət Girişi</title>
     <style>
         body { 
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
@@ -31,13 +31,7 @@
             font-weight: 700;
         }
         .form-group { margin-bottom: 18px; }
-        label { 
-            display: block; 
-            margin-bottom: 6px; 
-            font-weight: 600; 
-            color: #495057; 
-            font-size: 14px;
-        }
+        label { display: block; margin-bottom: 6px; font-weight: 600; color: #495057; font-size: 14px; }
         input { 
             width: 100%; 
             padding: 11px; 
@@ -61,48 +55,11 @@
             cursor: pointer; 
             font-size: 16px; 
             margin-top: 10px; 
-            transition: background-color 0.2s;
         }
         .btn-red:hover { background-color: #bb2d3b; }
-        
-        .btn-outline {
-            width: 100%; 
-            padding: 11px; 
-            background-color: #ffffff; 
-            color: #dc3545; 
-            border: 2px solid #dc3545; 
-            border-radius: 6px; 
-            font-weight: bold; 
-            cursor: pointer; 
-            font-size: 15px; 
-            margin-top: 12px; 
-            transition: all 0.2s;
-        }
-        .btn-outline:hover {
-            background-color: #dc3545;
-            color: #ffffff;
-        }
-
-        .error { 
-            color: #842029; 
-            background-color: #f8d7da; 
-            border: 1px solid #f5c2c7;
-            padding: 10px; 
-            border-radius: 6px; 
-            margin-bottom: 18px; 
-            text-align: center; 
-            font-size: 14px; 
-        }
-        .divider { 
-            text-align: center; 
-            margin: 18px 0; 
-            color: #a7acb1; 
-            font-size: 13px; 
-            font-weight: 600;
-        }
+        .error { color: #842029; background-color: #f8d7da; border: 1px solid #f5c2c7; padding: 10px; border-radius: 6px; margin-bottom: 18px; text-align: center; font-size: 14px; }
         .link { text-align: center; margin-top: 20px; font-size: 14px; color: #6c757d; }
         .link a { color: #dc3545; text-decoration: none; font-weight: bold; }
-        .link a:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
@@ -126,33 +83,10 @@
         <button type="submit" class="btn-red">Daxil ol</button>
     </form>
 
-    <div class="divider">VƏ YA</div>
-
-    <button onclick="promptGoogleLogin()" class="btn-outline">🚀 Google ilə Giriş Et</button>
-
     <div class="link">
         Hesabınız yoxdur? <a href="/register">Qeydiyyatdan keçin</a>
     </div>
 </div>
-
-<script>
-function promptGoogleLogin() {
-    let email = prompt("Google Email adresinizi daxil edin:");
-    if (email) {
-        fetch('/login-google', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: email })
-        }).then(res => res.json()).then(data => {
-            if(data.status === 'success') {
-                window.location.href = '/';
-            } else {
-                alert('Giriş alınmadı!');
-            }
-        });
-    }
-}
-</script>
 
 </body>
 </html>
