@@ -77,18 +77,29 @@ def check_in():
 
 # --- 3. ADMİN PANEL VƏ AYLIQ TƏQVİM ---
 @app.route('/admin')
+# --- 3. ADMİN PANEL VƏ AYLIQ TƏQVİM ---
+@app.route('/admin')
 def admin_panel():
-    selected_date = request.args.get('date')  # Format: YYYY-MM-DD
-    
-    # Cari vaxt, il və ay
     now = datetime.now(AZ_TZ)
-    year = request.args.get('year', type=int, default=now.year)
-    month = request.args.get('month', type=int, default=now.month)
-    
-    # Ayın neçə gündən ibarət olduğunu hesablayırıq
+    selected_date = request.args.get('date')          # Format: YYYY-MM-DD
+    month_str = request.args.get('month_picker')      # Format: YYYY-MM
+
+    # Ay və ili müəyyən edirik
+    if selected_date:
+        parts = selected_date.split('-')
+        year, month = int(parts[0]), int(parts[1])
+    elif month_str:
+        parts = month_str.split('-')
+        year, month = int(parts[0]), int(parts[1])
+        selected_date = f"{year}-{month:02d}-01"
+    else:
+        year, month = now.year, now.month
+        selected_date = now.strftime("%Y-%m-%d")
+
+    # Seçilən ayın neçə gündən ibarət olduğunu hesablayırıq
     num_days = calendar.monthrange(year, month)[1]
     
-    # Ayın bütün tarixlərini siyahı şəklində hazırlayırıq
+    # Ayın bütün günlərini hazırlayırıq
     days_in_month = []
     for day in range(1, num_days + 1):
         day_str = f"{year}-{month:02d}-{day:02d}"
@@ -100,23 +111,13 @@ def admin_panel():
     conn = sqlite3.connect('attendance.db')
     cursor = conn.cursor()
     
-    if selected_date:
-        cursor.execute('''
-            SELECT email, latitude, longitude, timestamp 
-            FROM attendance 
-            WHERE timestamp LIKE ? 
-            ORDER BY id DESC
-        ''', (f"{selected_date}%",))
-    else:
-        # Əgər tarix seçilməyibsə, defolt olaraq bugünkü qeydləri göstərir
-        today_str = now.strftime("%Y-%m-%d")
-        cursor.execute('''
-            SELECT email, latitude, longitude, timestamp 
-            FROM attendance 
-            WHERE timestamp LIKE ? 
-            ORDER BY id DESC
-        ''', (f"{today_str}%",))
-        selected_date = today_str
+    # Seçilmiş günün məlumatlarını götürürük
+    cursor.execute('''
+        SELECT email, latitude, longitude, timestamp 
+        FROM attendance 
+        WHERE timestamp LIKE ? 
+        ORDER BY id DESC
+    ''', (f"{selected_date}%",))
 
     records = cursor.fetchall()
     conn.close()
@@ -126,9 +127,8 @@ def admin_panel():
         records=records, 
         days=days_in_month, 
         selected_date=selected_date,
-        current_month=f"{year}-{month:02d}"
+        current_month_str=f"{year}-{month:02d}"
     )
-
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
