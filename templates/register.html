@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Qeydiyyat</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background-color: #fff5f5; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            min-height: 100vh; 
+            margin: 0; 
+        }
+        .card { 
+            background: #ffffff; 
+            padding: 35px 30px; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 20px rgba(220, 53, 69, 0.12); 
+            border: 1px solid #f8d7da;
+            width: 100%; 
+            max-width: 380px; 
+        }
+        h3 { 
+            text-align: center; 
+            margin-bottom: 25px; 
+            color: #dc3545; 
+            font-size: 24px;
+            font-weight: 700;
+        }
+        .form-group { margin-bottom: 18px; }
+        label { display: block; margin-bottom: 6px; font-weight: 600; color: #495057; font-size: 14px; }
+        input { 
+            width: 100%; 
+            padding: 11px; 
+            border: 1px solid #ced4da; 
+            border-radius: 6px; 
+            box-sizing: border-box; 
+        }
+        input:focus {
+            outline: none;
+            border-color: #dc3545;
+            box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.2);
+        }
+        .btn-red { 
+            width: 100%; 
+            padding: 12px; 
+            background-color: #dc3545; 
+            color: white; 
+            border: none; 
+            border-radius: 6px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            font-size: 16px; 
+            margin-top: 10px; 
+        }
+        .btn-red:hover { background-color: #bb2d3b; }
+        .error { color: #842029; background-color: #f8d7da; border: 1px solid #f5c2c7; padding: 10px; border-radius: 6px; margin-bottom: 18px; text-align: center; font-size: 14px; }
+        .link { text-align: center; margin-top: 20px; font-size: 14px; color: #6c757d; }
+        .link a { color: #dc3545; text-decoration: none; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h3>Qeydiyyat</h3>
+
+    {% if error %}
+        <div class="error">{{ error }}</div>
+    {% endif %}
+
+    <form method="POST" action="/register">
+        <div class="form-group">
+            <label for="name">Ad və Soyad:</label>
+            <input type="text" id="name" name="name" required>
+        </div>
+        <div class="form-group">
+            <label for="email">Gmail Adresi:</label>
+            <input type="email" id="email" name="email" required>
+        </div>
+        <div class="form-group">
+            <label for="password">Şifrə:</label>
+            <input type="password" id="password" name="password" required>
+        </div>
+        <button type="submit" class="btn-red">Qeydiyyatdan Keç</button>
+    </form>
+
+    <div class="link">
+        Artıq hesabınız var? <a href="/login">Daxil olun</a>
+    </div>
+</div>
+
+</body>
+</html>
