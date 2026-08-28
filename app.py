@@ -22,6 +22,7 @@ def init_db():
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS attendance (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT,
             email TEXT NOT NULL,
             latitude REAL NOT NULL,
             longitude REAL NOT NULL,
@@ -40,9 +41,14 @@ def init_db():
         )
     ''')
     
-    # Əgər əvvəldən yaranmış bazadırsa və sütun yoxdursa əlavə edirik
+    # Əgər əvvəldən olan bazadırsa sütunları xətasız əlavə edirik
     try:
         cursor.execute("ALTER TABLE users ADD COLUMN registered_device TEXT")
+    except sqlite3.OperationalError:
+        pass
+
+    try:
+        cursor.execute("ALTER TABLE attendance ADD COLUMN name TEXT")
     except sqlite3.OperationalError:
         pass
 
@@ -55,15 +61,16 @@ init_db()
 @app.route('/')
 def home():
     user_email = session.get('user_email')
+    user_name = session.get('user_name', '')
     if not user_email:
         return redirect(url_for('login_page'))
-    return render_template('index.html', email=user_email)
+    return render_template('index.html', email=user_email, name=user_name)
 
 
 @app.route('/register', methods=['GET', 'POST'])
 def register_page():
     if request.method == 'POST':
-        name = request.form.get('name')
+        name = request.form.get('name', '').strip()
         email = request.form.get('email', '').strip().lower()
         password = request.form.get('password')
 
@@ -80,6 +87,7 @@ def register_page():
 
         session.permanent = True
         session['user_email'] = email
+        session['user_name'] = name
         return redirect(url_for('home'))
 
     return render_template('register.html')
@@ -93,13 +101,14 @@ def login_page():
 
         conn = sqlite3.connect('attendance.db')
         cursor = conn.cursor()
-        cursor.execute('SELECT email FROM users WHERE email = ? AND password = ?', (email, password))
+        cursor.execute('SELECT email, name FROM users WHERE email = ? AND password = ?', (email, password))
         user = cursor.fetchone()
         conn.close()
 
         if user:
             session.permanent = True
             session['user_email'] = user[0]
+            session['user_name'] = user[1]
             return redirect(url_for('home'))
         else:
             return render_template('login.html', error="Gmail və ya şifrə yanlışdır!")
@@ -110,6 +119,7 @@ def login_page():
 @app.route('/logout')
 def logout():
     session.pop('user_email', None)
+    session.pop('user_name', None)
     return redirect(url_for('login_page'))
 
 
@@ -130,15 +140,15 @@ def check_in():
     conn = sqlite3.connect('attendance.db')
     cursor = conn.cursor()
 
-    # İstifadəçinin qeydiyyatlı cihazını yoxlayırıq
-    cursor.execute('SELECT registered_device FROM users WHERE email = ?', (email,))
+    # İstifadəçinin adını və qeydiyyatlı cihazını alırıq
+    cursor.execute('SELECT name, registered_device FROM users WHERE email = ?', (email,))
     row = cursor.fetchone()
 
     if not row:
         conn.close()
         return jsonify({"status": "error", "message": "İstifadəçi tapılmadı!"}), 404
 
-    saved_device_id = row[0]
+    user_name, saved_device_id = row[0], row[1]
 
     # Əgər ilk girişdirsə, bu cihazı hesaba bağlayırıq
     if not saved_device_id:
@@ -153,9 +163,9 @@ def check_in():
     now = datetime.now(AZ_TZ).strftime("%Y-%m-%d %H:%M:%S")
 
     cursor.execute('''
-        INSERT INTO attendance (email, latitude, longitude, timestamp, device)
-        VALUES (?, ?, ?, ?, ?)
-    ''', (email, lat, lng, now, client_device_id))
+        INSERT INTO attendance (name, email, latitude, longitude, timestamp, device)
+        VALUES (?, ?, ?, ?, ?, ?)
+    ''', (user_name, email, lat, lng, now, client_device_id))
     
     conn.commit()
     conn.close()
@@ -209,15 +219,15 @@ def admin_panel():
     conn = sqlite3.connect('attendance.db')
     cursor = conn.cursor()
     cursor.execute('''
-        SELECT email, latitude, longitude, timestamp, device 
+        SELECT name, email, latitude, longitude, timestamp, device 
         FROM attendance 
         WHERE timestamp LIKE ? 
         ORDER BY id DESC
     ''', (f"{selected_date}%",))
     records = cursor.fetchall()
 
-    # Qeydiyyatlı işçilərin cihaz siyahısı (Sıfırlamaq üçün)
-    cursor.execute('SELECT email, registered_device FROM users')
+    # Qeydiyyatlı işçilərin Ad, Email və Cihaz siyahısı
+    cursor.execute('SELECT name, email, registered_device FROM users')
     registered_users = cursor.fetchall()
     conn.close()
 
