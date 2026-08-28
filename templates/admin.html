@@ -34,6 +34,10 @@
         
         .reset-btn { background-color: #ffc107; color: #000; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; }
         .reset-btn:hover { background-color: #e0a800; }
+
+        /* Şübhəli Təkrar Cihaz Dizaynı */
+        .duplicate-row { background-color: #fff3cd !important; border-left: 4px solid #dc3545; }
+        .warning-tag { background-color: #dc3545; color: white; font-size: 11px; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-left: 6px; display: inline-block; }
     </style>
 </head>
 <body>
@@ -44,7 +48,7 @@
         <a href="/admin/logout" class="logout-btn">🔒 Çıxış et</a>
     </div>
 
-    <!-- AY SEÇİMİ HİSSƏSİ -->
+    <!-- AY SEÇİMİ -->
     <div class="month-selector">
         <form method="GET" action="/admin" id="monthForm">
             <label for="month_picker"><b>Baxmaq istədiyiniz ayı seçin:</b> </label>
@@ -81,11 +85,18 @@
         </thead>
         <tbody>
             {% for record in records %}
-            <tr>
-                <td><b>{{ record[0] if record[0] else 'Qeyd olunmayıb' }}</b></td>
+            <tr class="{% if record[5] in flagged_devices %}duplicate-row{% endif %}">
+                <td>
+                    <b>{{ record[0] if record[0] else 'Qeyd olunmayıb' }}</b>
+                    {% if record[5] in flagged_devices %}
+                        <span class="warning-tag">⚠️ Təkrar Cihaz</span>
+                    {% endif %}
+                </td>
                 <td>{{ record[1] }}</td>
                 <td>{{ record[4] }}</td>
-                <td><span class="device-code">{{ record[5] }}</span></td>
+                <td>
+                    <span class="device-code">{{ record[5] }}</span>
+                </td>
                 <td>{{ record[2] }}, {{ record[3] }}</td>
                 <td>
                     <a href="https://www.google.com/maps?q={{ record[2] }},{{ record[3] }}" target="_blank" class="map-btn">
@@ -114,8 +125,13 @@
         </thead>
         <tbody>
             {% for u in registered_users %}
-            <tr>
-                <td><b>{{ u[0] }}</b></td>
+            <tr class="{% if u[2] in flagged_registered_devices %}duplicate-row{% endif %}">
+                <td>
+                    <b>{{ u[0] }}</b>
+                    {% if u[2] in flagged_registered_devices %}
+                        <span class="warning-tag">⚠️ Eyni Telefon</span>
+                    {% endif %}
+                </td>
                 <td>{{ u[1] }}</td>
                 <td>
                     {% if u[2] %}
