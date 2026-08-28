@@ -6,54 +6,34 @@
     <title>Admin Panel - Davamiyyət Təqvimi</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #f8f9fa; }
-        .container { max-width: 1050px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .container { max-width: 1150px; margin: 0 auto; background: white; padding: 25px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
         
         .header-top { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e9ecef; padding-bottom: 10px; margin-bottom: 20px; }
-        h2 { margin: 0; color: #333; }
+        h2, h3 { margin: 0 0 10px 0; color: #333; }
         .logout-btn { background-color: #dc3545; color: white; padding: 8px 15px; text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 14px; }
         .logout-btn:hover { background-color: #bb2d3b; }
 
-        /* Ay Seçimi Paneli */
         .month-selector { display: flex; align-items: center; justify-content: space-between; background: #e9ecef; padding: 12px 20px; border-radius: 8px; margin-bottom: 20px; }
         .month-selector input[type="month"] { padding: 6px 12px; font-size: 16px; border-radius: 5px; border: 1px solid #ced4da; cursor: pointer; }
 
-        /* Təqvim Grid Dizaynı */
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-bottom: 25px; }
-        .day-btn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 12px;
-            background: #f1f3f5;
-            border: 1px solid #ced4da;
-            border-radius: 6px;
-            text-decoration: none;
-            color: #495057;
-            font-weight: bold;
-            transition: all 0.2s;
-        }
+        .day-btn { display: flex; align-items: center; justify-content: center; padding: 12px; background: #f1f3f5; border: 1px solid #ced4da; border-radius: 6px; text-decoration: none; color: #495057; font-weight: bold; transition: all 0.2s; }
         .day-btn:hover { background: #dee2e6; transform: translateY(-2px); }
         .day-btn.active { background: #0d6efd; color: white; border-color: #0d6efd; }
         
-        /* Cədvəl Dizaynı */
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { border: 1px solid #dee2e6; padding: 12px; text-align: left; vertical-align: middle; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 30px; }
+        th, td { border: 1px solid #dee2e6; padding: 12px; text-align: left; vertical-align: middle; font-size: 14px; }
         th { background-color: #343a40; color: white; }
         tr:nth-child(even) { background-color: #f8f9fa; }
         .no-data { text-align: center; color: #6c757d; font-style: italic; padding: 20px; }
 
-        /* Xəritə Düyməsi */
-        .map-btn {
-            display: inline-block;
-            background-color: #28a745;
-            color: white;
-            padding: 6px 12px;
-            text-decoration: none;
-            border-radius: 4px;
-            font-size: 14px;
-            font-weight: 500;
-        }
+        .map-btn { display: inline-block; background-color: #28a745; color: white; padding: 6px 12px; text-decoration: none; border-radius: 4px; font-size: 13px; font-weight: 500; }
         .map-btn:hover { background-color: #218838; }
+
+        .device-code { font-family: monospace; background: #e9ecef; padding: 3px 6px; border-radius: 4px; font-size: 12px; color: #495057; }
+        
+        .reset-btn { background-color: #ffc107; color: #000; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; }
+        .reset-btn:hover { background-color: #e0a800; }
     </style>
 </head>
 <body>
@@ -75,7 +55,7 @@
         </div>
     </div>
 
-    <!-- AYIN GÜNLƏRİ (TƏQVİM) -->
+    <!-- TƏQVİM -->
     <div class="calendar-grid">
         {% for day in days %}
             <a href="/admin?date={{ day.date_str }}" 
@@ -85,7 +65,7 @@
         {% endfor %}
     </div>
 
-    <h3>Seçilmiş Gün: <span style="color: #0d6efd;">{{ selected_date }}</span></h3>
+    <h3>Günün Qeydləri: <span style="color: #0d6efd;">{{ selected_date }}</span></h3>
 
     <!-- DAVAMİYYƏT CƏDVƏLİ -->
     <table>
@@ -93,8 +73,8 @@
             <tr>
                 <th>Email</th>
                 <th>Giriş Saatı</th>
-                <th>Cihaz / Telefon</th>
-                <th>Koordinatlar (Lat, Lng)</th>
+                <th>Cihaz İmzası (Token)</th>
+                <th>Koordinatlar</th>
                 <th>Xəritə</th>
             </tr>
         </thead>
@@ -103,17 +83,52 @@
             <tr>
                 <td>{{ record[0] }}</td>
                 <td>{{ record[3] }}</td>
-                <td><b>{{ record[4] }}</b></td> <!-- Burada telefon markası görünəcək -->
+                <td><span class="device-code">{{ record[4] }}</span></td>
                 <td>{{ record[1] }}, {{ record[2] }}</td>
                 <td>
                     <a href="https://www.google.com/maps?q={{ record[1] }},{{ record[2] }}" target="_blank" class="map-btn">
-                        📍 Xəritədə bax
+                        📍 Bax
                     </a>
                 </td>
             </tr>
             {% else %}
             <tr>
                 <td colspan="5" class="no-data">Bu tarix üçün heç bir qeydiyyat tapılmadı.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- QEYDİYYATLI CİHAZLAR VƏ SIFIRLAMA -->
+    <h3>📱 İşçilərin Cihaz Bağlantıları</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>İstifadəçi Email</th>
+                <th>Bağlanmış Cihaz ID</th>
+                <th>Əməliyyat</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for u in registered_users %}
+            <tr>
+                <td><b>{{ u[0] }}</b></td>
+                <td>
+                    {% if u[1] %}
+                        <span class="device-code">{{ u[1] }}</span>
+                    {% else %}
+                        <span style="color: #6c757d; font-style: italic;">Hələ cihaz bağlanmayıb</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if u[1] %}
+                    <form method="POST" action="/admin/reset-device/{{ u[0] }}" onsubmit="return confirm('Bu işçinin cihaz kilidini sıfırlamaq istədiyinizə əminsiniz?');">
+                        <button type="submit" class="reset-btn">🔄 Kilidi Aç (Sıfırla)</button>
+                    </form>
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
             </tr>
             {% endfor %}
         </tbody>
