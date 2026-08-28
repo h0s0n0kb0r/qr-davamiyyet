@@ -71,6 +71,7 @@
     <table>
         <thead>
             <tr>
+                <th>Ad Soyad</th>
                 <th>Email</th>
                 <th>Giriş Saatı</th>
                 <th>Cihaz İmzası (Token)</th>
@@ -81,30 +82,32 @@
         <tbody>
             {% for record in records %}
             <tr>
-                <td>{{ record[0] }}</td>
-                <td>{{ record[3] }}</td>
-                <td><span class="device-code">{{ record[4] }}</span></td>
-                <td>{{ record[1] }}, {{ record[2] }}</td>
+                <td><b>{{ record[0] if record[0] else 'Qeyd olunmayıb' }}</b></td>
+                <td>{{ record[1] }}</td>
+                <td>{{ record[4] }}</td>
+                <td><span class="device-code">{{ record[5] }}</span></td>
+                <td>{{ record[2] }}, {{ record[3] }}</td>
                 <td>
-                    <a href="https://www.google.com/maps?q={{ record[1] }},{{ record[2] }}" target="_blank" class="map-btn">
+                    <a href="https://www.google.com/maps?q={{ record[2] }},{{ record[3] }}" target="_blank" class="map-btn">
                         📍 Bax
                     </a>
                 </td>
             </tr>
             {% else %}
             <tr>
-                <td colspan="5" class="no-data">Bu tarix üçün heç bir qeydiyyat tapılmadı.</td>
+                <td colspan="6" class="no-data">Bu tarix üçün heç bir qeydiyyat tapılmadı.</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
 
     <!-- QEYDİYYATLI CİHAZLAR VƏ SIFIRLAMA -->
-    <h3>📱 İşçilərin Cihaz Bağlantıları</h3>
+    <h3>📱 Qeydiyyatlı İşçilər və Cihaz Bağlantıları</h3>
     <table>
         <thead>
             <tr>
-                <th>İstifadəçi Email</th>
+                <th>Ad Soyad</th>
+                <th>Email</th>
                 <th>Bağlanmış Cihaz ID</th>
                 <th>Əməliyyat</th>
             </tr>
@@ -113,16 +116,17 @@
             {% for u in registered_users %}
             <tr>
                 <td><b>{{ u[0] }}</b></td>
+                <td>{{ u[1] }}</td>
                 <td>
-                    {% if u[1] %}
-                        <span class="device-code">{{ u[1] }}</span>
+                    {% if u[2] %}
+                        <span class="device-code">{{ u[2] }}</span>
                     {% else %}
                         <span style="color: #6c757d; font-style: italic;">Hələ cihaz bağlanmayıb</span>
                     {% endif %}
                 </td>
                 <td>
-                    {% if u[1] %}
-                    <form method="POST" action="/admin/reset-device/{{ u[0] }}" onsubmit="return confirm('Bu işçinin cihaz kilidini sıfırlamaq istədiyinizə əminsiniz?');">
+                    {% if u[2] %}
+                    <form method="POST" action="/admin/reset-device/{{ u[1] }}" onsubmit="return confirm('Bu işçinin cihaz kilidini sıfırlamaq istədiyinizə əminsiniz?');">
                         <button type="submit" class="reset-btn">🔄 Kilidi Aç (Sıfırla)</button>
                     </form>
                     {% else %}
