@@ -41,7 +41,6 @@ def init_db():
         )
     ''')
     
-    # Əgər əvvəldən olan bazadırsa sütunları xətasız əlavə edirik
     try:
         cursor.execute("ALTER TABLE users ADD COLUMN registered_device TEXT")
     except sqlite3.OperationalError:
@@ -140,7 +139,17 @@ def check_in():
     conn = sqlite3.connect('attendance.db')
     cursor = conn.cursor()
 
-    # İstifadəçinin adını və qeydiyyatlı cihazını alırıq
+    # 1. Bu cihaz artıq BAŞQA bir istifadəçiyə bağlanıbmı?
+    cursor.execute('SELECT email, name FROM users WHERE registered_device = ? AND email != ?', (client_device_id, email))
+    other_user = cursor.fetchone()
+    if other_user:
+        conn.close()
+        return jsonify({
+            "status": "error", 
+            "message": f"❌ Bu telefon artıq başqa işçinin ({other_user[1]}) hesabına bağlıdır! Eyni cihazdan başqasının yerinə giriş etmək qadağandır."
+        }), 403
+
+    # 2. İstifadəçinin öz qeydiyyatlı cihazını yoxlayırıq
     cursor.execute('SELECT name, registered_device FROM users WHERE email = ?', (email,))
     row = cursor.fetchone()
 
@@ -150,7 +159,7 @@ def check_in():
 
     user_name, saved_device_id = row[0], row[1]
 
-    # Əgər ilk girişdirsə, bu cihazı hesaba bağlayırıq
+    # Əgər hesaba cihaz hələ bağlanmayıbsa, bu cihazı bağlayırıq
     if not saved_device_id:
         cursor.execute('UPDATE users SET registered_device = ? WHERE email = ?', (client_device_id, email))
     elif saved_device_id != client_device_id:
@@ -218,6 +227,8 @@ def admin_panel():
 
     conn = sqlite3.connect('attendance.db')
     cursor = conn.cursor()
+    
+    # Seçilmiş günün qeydləri
     cursor.execute('''
         SELECT name, email, latitude, longitude, timestamp, device 
         FROM attendance 
@@ -226,10 +237,31 @@ def admin_panel():
     ''', (f"{selected_date}%",))
     records = cursor.fetchall()
 
-    # Qeydiyyatlı işçilərin Ad, Email və Cihaz siyahısı
+    # Qeydiyyatlı işçilərin siyahısı
     cursor.execute('SELECT name, email, registered_device FROM users')
     registered_users = cursor.fetchall()
     conn.close()
+
+    # Günün qeydlərində təkrar olunan cihaz ID-lərini tapırıq (fərqli emaillər tərəfindən istifadə edilən)
+    device_emails_today = {}
+    for r in records:
+        dev = r[5]
+        em = r[1]
+        if dev and dev != 'Bilinmir':
+            if dev not in device_emails_today:
+                device_emails_today[dev] = set()
+            device_emails_today[dev].add(em)
+    
+    # Birdən çox fərqli email tərəfindən istifadə edilən cihaz ID-ləri
+    flagged_devices = {dev for dev, emails in device_emails_today.items() if len(emails) > 1}
+
+    # Qeydiyyatlı istifadəçilər arasında da təkrar cihazları tapırıq
+    user_devices = {}
+    for u in registered_users:
+        dev = u[2]
+        if dev:
+            user_devices[dev] = user_devices.get(dev, 0) + 1
+    flagged_registered_devices = {dev for dev, count in user_devices.items() if count > 1}
 
     return render_template(
         'admin.html', 
@@ -237,7 +269,9 @@ def admin_panel():
         days=days_in_month, 
         selected_date=selected_date,
         current_month_str=f"{year}-{month:02d}",
-        registered_users=registered_users
+        registered_users=registered_users,
+        flagged_devices=flagged_devices,
+        flagged_registered_devices=flagged_registered_devices
     )
 
 
