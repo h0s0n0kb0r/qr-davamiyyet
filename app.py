@@ -15,36 +15,6 @@ app.secret_key = "super_gizli_secret_key_bura_yazin"
 app.permanent_session_lifetime = timedelta(days=90)
 
 
-def detect_device(user_agent_str):
-    ua = user_agent_str.lower()
-    if "iphone" in ua:
-        return "📱 Apple iPhone"
-    elif "ipad" in ua:
-        return "📱 Apple iPad"
-    elif "samsung" in ua:
-        return "📱 Samsung"
-    elif "redmi" in ua:
-        return "📱 Xiaomi Redmi"
-    elif "xiaomi" in ua or "mi " in ua:
-        return "📱 Xiaomi"
-    elif "huawei" in ua or "honor" in ua:
-        return "📱 Huawei / Honor"
-    elif "pixel" in ua:
-        return "📱 Google Pixel"
-    elif "oppo" in ua:
-        return "📱 OPPO"
-    elif "vivo" in ua:
-        return "📱 Vivo"
-    elif "android" in ua:
-        return "📱 Android Telefon"
-    elif "windows" in ua:
-        return "💻 Windows Kompüter"
-    elif "macintosh" in ua or "mac os" in ua:
-        return "💻 Mac Kompüter"
-    else:
-        return "❓ Məlum Olmayan Cihaz"
-
-
 def init_db():
     conn = sqlite3.connect('attendance.db')
     cursor = conn.cursor()
@@ -65,10 +35,17 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
             email TEXT UNIQUE NOT NULL,
-            password TEXT NOT NULL
+            password TEXT NOT NULL,
+            registered_device TEXT
         )
     ''')
     
+    # Əgər əvvəldən yaranmış bazadırsa və sütun yoxdursa əlavə edirik
+    try:
+        cursor.execute("ALTER TABLE users ADD COLUMN registered_device TEXT")
+    except sqlite3.OperationalError:
+        pass
+
     conn.commit()
     conn.close()
 
@@ -87,7 +64,7 @@ def home():
 def register_page():
     if request.method == 'POST':
         name = request.form.get('name')
-        email = request.form.get('email').strip().lower()
+        email = request.form.get('email', '').strip().lower()
         password = request.form.get('password')
 
         conn = sqlite3.connect('attendance.db')
@@ -111,7 +88,7 @@ def register_page():
 @app.route('/login', methods=['GET', 'POST'])
 def login_page():
     if request.method == 'POST':
-        email = request.form.get('email').strip().lower()
+        email = request.form.get('email', '').strip().lower()
         password = request.form.get('password')
 
         conn = sqlite3.connect('attendance.db')
@@ -142,20 +119,44 @@ def check_in():
     if not email:
         return jsonify({"status": "error", "message": "İlk öncə daxil olun!"}), 401
 
-    data = request.json
+    data = request.json or {}
     lat = data.get('latitude')
     lng = data.get('longitude')
-    now = datetime.now(AZ_TZ).strftime("%Y-%m-%d %H:%M:%S")
+    client_device_id = data.get('device_id')
 
-    user_agent = request.headers.get('User-Agent', '')
-    device_name = detect_device(user_agent)
+    if not client_device_id:
+        return jsonify({"status": "error", "message": "Cihaz imzası tapılmadı! Səhifəni yeniləyin."}), 400
 
     conn = sqlite3.connect('attendance.db')
     cursor = conn.cursor()
+
+    # İstifadəçinin qeydiyyatlı cihazını yoxlayırıq
+    cursor.execute('SELECT registered_device FROM users WHERE email = ?', (email,))
+    row = cursor.fetchone()
+
+    if not row:
+        conn.close()
+        return jsonify({"status": "error", "message": "İstifadəçi tapılmadı!"}), 404
+
+    saved_device_id = row[0]
+
+    # Əgər ilk girişdirsə, bu cihazı hesaba bağlayırıq
+    if not saved_device_id:
+        cursor.execute('UPDATE users SET registered_device = ? WHERE email = ?', (client_device_id, email))
+    elif saved_device_id != client_device_id:
+        conn.close()
+        return jsonify({
+            "status": "error", 
+            "message": "❌ Bu hesab başqa cihaza bağlıdır! Yalnız öz telefonunuzdan giriş edə bilərsiniz."
+        }), 403
+
+    now = datetime.now(AZ_TZ).strftime("%Y-%m-%d %H:%M:%S")
+
     cursor.execute('''
         INSERT INTO attendance (email, latitude, longitude, timestamp, device)
         VALUES (?, ?, ?, ?, ?)
-    ''', (email, lat, lng, now, device_name))
+    ''', (email, lat, lng, now, client_device_id))
+    
     conn.commit()
     conn.close()
 
@@ -214,6 +215,10 @@ def admin_panel():
         ORDER BY id DESC
     ''', (f"{selected_date}%",))
     records = cursor.fetchall()
+
+    # Qeydiyyatlı işçilərin cihaz siyahısı (Sıfırlamaq üçün)
+    cursor.execute('SELECT email, registered_device FROM users')
+    registered_users = cursor.fetchall()
     conn.close()
 
     return render_template(
@@ -221,8 +226,23 @@ def admin_panel():
         records=records, 
         days=days_in_month, 
         selected_date=selected_date,
-        current_month_str=f"{year}-{month:02d}"
+        current_month_str=f"{year}-{month:02d}",
+        registered_users=registered_users
     )
+
+
+@app.route('/admin/reset-device/<email>', methods=['POST'])
+def reset_device(email):
+    if not session.get('admin_logged_in'):
+        return redirect(url_for('admin_login'))
+
+    conn = sqlite3.connect('attendance.db')
+    cursor = conn.cursor()
+    cursor.execute('UPDATE users SET registered_device = NULL WHERE email = ?', (email,))
+    conn.commit()
+    conn.close()
+
+    return redirect(request.referrer or url_for('admin_panel'))
 
 
 if __name__ == '__main__':
