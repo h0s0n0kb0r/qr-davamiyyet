@@ -19,8 +19,6 @@ def init_db():
     conn = sqlite3.connect('attendance.db')
     cursor = conn.cursor()
     
-    # DROP TABLE sətirlərini burdan sildik ki, bazadakı məlumatlar silinməsin!
-    
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS attendance (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -127,14 +125,15 @@ def register_page():
 
 @app.route('/logout')
 def logout():
-    return redirect(url_for('home'))
+    session.clear()
+    return redirect(url_for('register_page'))
 
 
 @app.route('/api/check-in', methods=['POST'])
 def check_in():
     email = session.get('user_email')
     if not email:
-        return jsonify({"status": "error", "message": "İlk öncə qeydiyyatdan keçin!"}), 401
+        return jsonify({"status": "redirect", "redirect_url": "/register"}), 401
 
     data = request.json or {}
     lat = data.get('latitude')
@@ -150,16 +149,17 @@ def check_in():
     cursor.execute('SELECT name, registered_device FROM users WHERE email = ?', (email,))
     row = cursor.fetchone()
 
-    if not row:
+    # Əgər istifadəçi və ya token bazadan silinibse, sessiyanı təmizləyib qeydiyyata atırıq
+    if not row or row[1] != client_device_id:
         conn.close()
-        return jsonify({"status": "error", "message": "İstifadəçi tapılmadı!"}), 404
+        session.clear()
+        return jsonify({
+            "status": "redirect", 
+            "message": "Hesabınız və ya cihaz qeydiyyatınız tapılmadı. Qeydiyyat səhifəsinə yönləndirilirsiniz...",
+            "redirect_url": "/register"
+        }), 404
 
-    user_name, saved_device_id = row[0], row[1]
-
-    if saved_device_id != client_device_id:
-        conn.close()
-        return jsonify({"status": "error", "message": "❌ Cihaz xətası! Bu hesab başqa cihasa bağlıdır."}), 403
-
+    user_name = row[0]
     now = datetime.now(AZ_TZ).strftime("%Y-%m-%d %H:%M:%S")
 
     cursor.execute('''
@@ -227,7 +227,6 @@ def admin_panel():
     ''', (f"{selected_date}%",))
     records = cursor.fetchall()
 
-    # İD daxil olmaqla istifadəçiləri çəkirik
     cursor.execute('SELECT id, name, email, registered_device FROM users')
     registered_users = cursor.fetchall()
     conn.close()
@@ -245,7 +244,7 @@ def admin_panel():
 
     user_devices = {}
     for u in registered_users:
-        dev = u[3]  # u[3] registered_device-dir
+        dev = u[3] 
         if dev:
             user_devices[dev] = user_devices.get(dev, 0) + 1
     flagged_registered_devices = {dev for dev, count in user_devices.items() if count > 1}
@@ -262,7 +261,6 @@ def admin_panel():
     )
 
 
-# --- YENİ: İSTİFADƏÇİ MƏLUMATLARINI YENİLƏMƏ VƏ SİLMƏ ---
 @app.route('/admin/update-user/<int:user_id>', methods=['POST'])
 def update_user(user_id):
     if not session.get('admin_logged_in'):
