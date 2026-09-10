@@ -19,10 +19,7 @@ def init_db():
     conn = sqlite3.connect('attendance.db')
     cursor = conn.cursor()
     
-    # Qeyd: Əgər hər dəfə server açılanda bazanın silinməsini istəmirsənsə, 
-    # aşağıdakı 2 'DROP TABLE' sətrini silə bilərsən.
-    cursor.execute('DROP TABLE IF EXISTS attendance')
-    cursor.execute('DROP TABLE IF EXISTS users')
+    # DROP TABLE sətirlərini burdan sildik ki, bazadakı məlumatlar silinməsin!
     
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS attendance (
