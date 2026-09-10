@@ -260,10 +260,14 @@ def admin_panel():
     for u in registered_users:
         dev = u[2]
         if dev:
+            user_devices = {}
+    for u in registered_users:
+        dev = u[2]
+        if dev:
             user_devices[dev] = user_devices.get(dev, 0) + 1
     flagged_registered_devices = {dev for dev, count in user_devices.items() if count > 1}
 
-        return render_template( # Sintaktik düzəliş
+    return render_template(
         'admin.html', 
         records=records, 
         days=days_in_month, 
