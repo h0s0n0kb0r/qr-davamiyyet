@@ -6,7 +6,7 @@
     <title>Admin Panel - Davamiyyət Təqvimi</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #f8f9fa; }
-        .container { max-width: 1150px; margin: 0 auto; background: white; padding: 25px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 25px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
         
         .header-top { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e9ecef; padding-bottom: 10px; margin-bottom: 20px; }
         h2, h3 { margin: 0 0 10px 0; color: #333; }
@@ -32,10 +32,15 @@
 
         .device-code { font-family: monospace; background: #e9ecef; padding: 3px 6px; border-radius: 4px; font-size: 12px; color: #495057; }
         
-        .reset-btn { background-color: #ffc107; color: #000; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; }
+        .reset-btn { background-color: #ffc107; color: #000; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; }
         .reset-btn:hover { background-color: #e0a800; }
+        
+        .save-btn { background-color: #0d6efd; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; }
+        .save-btn:hover { background-color: #0b5ed7; }
 
-        /* Şübhəli Təkrar Cihaz Dizaynı */
+        .delete-btn { background-color: #dc3545; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; }
+        .delete-btn:hover { background-color: #bb2d3b; }
+
         .duplicate-row { background-color: #fff3cd !important; border-left: 4px solid #dc3545; }
         .warning-tag { background-color: #dc3545; color: white; font-size: 11px; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-left: 6px; display: inline-block; }
     </style>
@@ -64,7 +69,7 @@
         {% for day in days %}
             <a href="/admin?date={{ day.date_str }}" 
                class="day-btn {% if day.date_str == selected_date %}active{% endif %}">
-               <span>{{ day.day_number }}</span>
+                <span>{{ day.day_number }}</span>
             </a>
         {% endfor %}
     </div>
@@ -112,43 +117,62 @@
         </tbody>
     </table>
 
-    <!-- QEYDİYYATLI CİHAZLAR VƏ SIFIRLAMA -->
-    <h3>📱 Qeydiyyatlı İşçilər və Cihaz Bağlantıları</h3>
+    <!-- QEYDİYYATLI İŞÇİLƏR VƏ İDARƏETMƏ -->
+    <h3>📱 Qeydiyyatlı İşçilər və İdarəetmə</h3>
     <table>
         <thead>
             <tr>
                 <th>Ad Soyad</th>
                 <th>Email</th>
                 <th>Bağlanmış Cihaz ID</th>
-                <th>Əməliyyat</th>
+                <th>Əməliyyatlar (Yadda saxla / Kilidi Aç / Sil)</th>
             </tr>
         </thead>
         <tbody>
             {% for u in registered_users %}
-            <tr class="{% if u[2] in flagged_registered_devices %}duplicate-row{% endif %}">
-                <td>
-                    <b>{{ u[0] }}</b>
-                    {% if u[2] in flagged_registered_devices %}
-                        <span class="warning-tag">⚠️ Eyni Telefon</span>
-                    {% endif %}
-                </td>
-                <td>{{ u[1] }}</td>
-                <td>
-                    {% if u[2] %}
-                        <span class="device-code">{{ u[2] }}</span>
-                    {% else %}
-                        <span style="color: #6c757d; font-style: italic;">Hələ cihaz bağlanmayıb</span>
-                    {% endif %}
-                </td>
-                <td>
-                    {% if u[2] %}
-                    <form method="POST" action="/admin/reset-device/{{ u[1] }}" onsubmit="return confirm('Bu işçinin cihaz kilidini sıfırlamaq istədiyinizə əminsiniz?');">
-                        <button type="submit" class="reset-btn">🔄 Kilidi Aç (Sıfırla)</button>
-                    </form>
-                    {% else %}
-                        -
-                    {% endif %}
-                </td>
+            <!-- u[0]=id, u[1]=name, u[2]=email, u[3]=device -->
+            <tr class="{% if u[3] in flagged_registered_devices %}duplicate-row{% endif %}">
+                <!-- Ad və Email dəyişmək üçün form -->
+                <form method="POST" action="/admin/update-user/{{ u[0] }}">
+                    <td>
+                        <input type="text" name="name" value="{{ u[1] }}" style="padding: 6px; width: 95%; border: 1px solid #ced4da; border-radius: 4px;" required>
+                        {% if u[3] in flagged_registered_devices %}
+                            <br><span class="warning-tag">⚠️ Eyni Telefon</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <input type="email" name="email" value="{{ u[2] }}" style="padding: 6px; width: 95%; border: 1px solid #ced4da; border-radius: 4px;" required>
+                    </td>
+                    <td>
+                        {% if u[3] %}
+                            <span class="device-code">{{ u[3] }}</span>
+                        {% else %}
+                            <span style="color: #6c757d; font-style: italic;">Hələ cihaz bağlanmayıb</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+                            <!-- Məlumatı Yenilə -->
+                            <button type="submit" class="save-btn">💾 Yadda saxla</button>
+                </form>
+
+                            <!-- Cihaz Kilidini Açma Formu -->
+                            {% if u[3] %}
+                            <form method="POST" action="/admin/reset-device/{{ u[2] }}" onsubmit="return confirm('Bu işçinin cihaz kilidini sıfırlamaq istədiyinizə əminsiniz?');" style="margin:0;">
+                                <button type="submit" class="reset-btn">🔄 Kilidi Aç</button>
+                            </form>
+                            {% endif %}
+
+                            <!-- İstifadəçini Silmə Formu -->
+                            <form method="POST" action="/admin/delete-user/{{ u[0] }}" onsubmit="return confirm('Bu işçini sistemdən tamamilə silmək istədiyinizə əminsiniz?');" style="margin:0;">
+                                <button type="submit" class="delete-btn">🗑️ Sil</button>
+                            </form>
+                        </div>
+                    </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="4" class="no-data">Hələ heç bir qeydiyyatlı işçi yoxdur.</td>
             </tr>
             {% endfor %}
         </tbody>
