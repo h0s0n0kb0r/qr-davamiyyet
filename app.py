@@ -19,7 +19,8 @@ def init_db():
     conn = sqlite3.connect('attendance.db')
     cursor = conn.cursor()
     
-    # Köhnə cədvəlləri tamamilə silirik ki, yaddaş sıfırlansın
+    # Qeyd: Əgər hər dəfə server açılanda bazanın silinməsini istəmirsənsə, 
+    # aşağıdakı 2 'DROP TABLE' sətrini silə bilərsən.
     cursor.execute('DROP TABLE IF EXISTS attendance')
     cursor.execute('DROP TABLE IF EXISTS users')
     
@@ -59,7 +60,6 @@ def home():
     return render_template('index.html', email=user_email, name=user_name)
 
 
-# Cihaz tokeni ilə avtomatik tanınma üçün API və ya yönləndirmə
 @app.route('/api/check-device', methods=['POST'])
 def check_device():
     data = request.json or {}
@@ -96,13 +96,11 @@ def register_page():
         conn = sqlite3.connect('attendance.db')
         cursor = conn.cursor()
         
-        # Bu cihaz başqasına bağlıdırmı?
         cursor.execute('SELECT name FROM users WHERE registered_device = ?', (device_id,))
         if cursor.fetchone():
             conn.close()
             return render_template('register.html', error="Bu cihaz artıq başqa hesaba bağlanıb!")
 
-        # Bu email artıq qeydiyyatdadırmı?
         cursor.execute('SELECT id, registered_device FROM users WHERE email = ?', (email,))
         existing_user = cursor.fetchone()
 
@@ -111,10 +109,8 @@ def register_page():
                 conn.close()
                 return render_template('register.html', error="Bu Gmail adresi artıq başqa cihaza bağlıdır!")
             else:
-                # Emaili var ama hələ cihaz bağlanmayıbsa, bu cihazı bağlayırıq
                 cursor.execute('UPDATE users SET registered_device = ?, name = ? WHERE email = ?', (device_id, name, email))
         else:
-            # Tamamilə yeni qeydiyyat
             try:
                 cursor.execute('INSERT INTO users (name, email, registered_device) VALUES (?, ?, ?)', (name, email, device_id))
             except sqlite3.IntegrityError:
@@ -133,9 +129,7 @@ def register_page():
 
 
 @app.route('/logout')
-@app.route('/logout')
 def logout():
-    # Çıxış etməyə icazə verilmir, birbaşa ana səhifəyə qayıdır
     return redirect(url_for('home'))
 
 
@@ -182,7 +176,6 @@ def check_in():
     return jsonify({"status": "success", "message": "Girişiniz uğurla qeydə alındı!"})
 
 
-@app.route('/admin/login', methods=['GET, POST']) # (Burada GET, POST vergüllə olmalıdır)
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
     error = None
@@ -237,7 +230,8 @@ def admin_panel():
     ''', (f"{selected_date}%",))
     records = cursor.fetchall()
 
-    cursor.execute('SELECT name, email, registered_device FROM users')
+    # İD daxil olmaqla istifadəçiləri çəkirik
+    cursor.execute('SELECT id, name, email, registered_device FROM users')
     registered_users = cursor.fetchall()
     conn.close()
 
@@ -254,11 +248,7 @@ def admin_panel():
 
     user_devices = {}
     for u in registered_users:
-        dev = u[2]
-        if dev:
-            user_devices = {}
-    for u in registered_users:
-        dev = u[2]
+        dev = u[3]  # u[3] registered_device-dir
         if dev:
             user_devices[dev] = user_devices.get(dev, 0) + 1
     flagged_registered_devices = {dev for dev, count in user_devices.items() if count > 1}
@@ -273,6 +263,38 @@ def admin_panel():
         flagged_devices=flagged_devices,
         flagged_registered_devices=flagged_registered_devices
     )
+
+
+# --- YENİ: İSTİFADƏÇİ MƏLUMATLARINI YENİLƏMƏ VƏ SİLMƏ ---
+@app.route('/admin/update-user/<int:user_id>', methods=['POST'])
+def update_user(user_id):
+    if not session.get('admin_logged_in'):
+        return redirect(url_for('admin_login'))
+
+    name = request.form.get('name', '').strip()
+    email = request.form.get('email', '').strip().lower()
+
+    conn = sqlite3.connect('attendance.db')
+    cursor = conn.cursor()
+    cursor.execute('UPDATE users SET name = ?, email = ? WHERE id = ?', (name, email, user_id))
+    conn.commit()
+    conn.close()
+
+    return redirect(url_for('admin_panel'))
+
+
+@app.route('/admin/delete-user/<int:user_id>', methods=['POST'])
+def delete_user(user_id):
+    if not session.get('admin_logged_in'):
+        return redirect(url_for('admin_login'))
+
+    conn = sqlite3.connect('attendance.db')
+    cursor = conn.cursor()
+    cursor.execute('DELETE FROM users WHERE id = ?', (user_id,))
+    conn.commit()
+    conn.close()
+
+    return redirect(url_for('admin_panel'))
 
 
 @app.route('/admin/reset-device/<email>', methods=['POST'])
