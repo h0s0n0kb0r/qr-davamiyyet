@@ -35,7 +35,7 @@
         .reset-btn { background-color: #ffc107; color: #000; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; }
         .reset-btn:hover { background-color: #e0a800; }
         
-        .save-btn { background-color: #0d6efd; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; }
+        .save-btn { background-color: #0d6efd; color: white; border-none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; }
         .save-btn:hover { background-color: #0b5ed7; }
 
         .delete-btn { background-color: #dc3545; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; }
@@ -98,7 +98,17 @@
                     {% endif %}
                 </td>
                 <td>{{ record[1] }}</td>
-                <td>{{ record[4] }}</td>
+                <!-- GİRİŞ SAATI VƏ GECİKMƏ RƏNGİ -->
+                <td>
+                    <span style="font-weight: bold; color: {% if record[6] %}#dc3545{% else %}#198754{% endif %};">
+                        {{ record[4] }}
+                    </span>
+                    {% if record[6] %}
+                        <span style="font-size: 10px; background: #dc3545; color: white; padding: 2px 5px; border-radius: 3px; margin-left: 4px;">Gecikib</span>
+                    {% else %}
+                        <span style="font-size: 10px; background: #198754; color: white; padding: 2px 5px; border-radius: 3px; margin-left: 4px;">Vaxtında</span>
+                    {% endif %}
+                </td>
                 <td>
                     <span class="device-code">{{ record[5] }}</span>
                 </td>
@@ -130,9 +140,7 @@
         </thead>
         <tbody>
             {% for u in registered_users %}
-            <!-- u[0]=id, u[1]=name, u[2]=email, u[3]=device -->
             <tr class="{% if u[3] in flagged_registered_devices %}duplicate-row{% endif %}">
-                <!-- Ad və Email dəyişmək üçün form -->
                 <form method="POST" action="/admin/update-user/{{ u[0] }}">
                     <td>
                         <input type="text" name="name" value="{{ u[1] }}" style="padding: 6px; width: 95%; border: 1px solid #ced4da; border-radius: 4px;" required>
@@ -152,18 +160,15 @@
                     </td>
                     <td>
                         <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
-                            <!-- Məlumatı Yenilə -->
                             <button type="submit" class="save-btn">💾 Yadda saxla</button>
                 </form>
 
-                            <!-- Cihaz Kilidini Açma Formu -->
                             {% if u[3] %}
                             <form method="POST" action="/admin/reset-device/{{ u[2] }}" onsubmit="return confirm('Bu işçinin cihaz kilidini sıfırlamaq istədiyinizə əminsiniz?');" style="margin:0;">
                                 <button type="submit" class="reset-btn">🔄 Kilidi Aç</button>
                             </form>
                             {% endif %}
 
-                            <!-- İstifadəçini Silmə Formu -->
                             <form method="POST" action="/admin/delete-user/{{ u[0] }}" onsubmit="return confirm('Bu işçini sistemdən tamamilə silmək istədiyinizə əminsiniz?');" style="margin:0;">
                                 <button type="submit" class="delete-btn">🗑️ Sil</button>
                             </form>
