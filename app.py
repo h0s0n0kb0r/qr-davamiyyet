@@ -19,6 +19,10 @@ def init_db():
     conn = sqlite3.connect('attendance.db')
     cursor = conn.cursor()
     
+    # Köhnə cədvəlləri tamamilə silirik ki, yaddaş sıfırlansın
+    cursor.execute('DROP TABLE IF EXISTS attendance')
+    cursor.execute('DROP TABLE IF EXISTS users')
+    
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS attendance (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -39,12 +43,6 @@ def init_db():
             registered_device TEXT UNIQUE
         )
     ''')
-    
-    # Köhnə bazada şifrə sütunu varsa xəta verməməsi üçün yoxlayırıq
-    try:
-        cursor.execute("ALTER TABLE users ADD COLUMN registered_device TEXT")
-    except sqlite3.OperationalError:
-        pass
 
     conn.commit()
     conn.close()
