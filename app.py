@@ -135,12 +135,10 @@ def register_page():
 
 
 @app.route('/logout')
+@app.route('/logout')
 def logout():
-    # Token əsaslı sistemdə adətən logout olunmur ki, istifadəçi hər dəfə girəndə avtomatik tanınsın. 
-    # Amma yenə də sessiyanı təmizləmək istəsəz:
-    session.pop('user_email', None)
-    session.pop('user_name', None)
-    return redirect(url_for('register_page'))
+    # Çıxış etməyə icazə verilmir, birbaşa ana səhifəyə qayıdır
+    return redirect(url_for('home'))
 
 
 @app.route('/api/check-in', methods=['POST'])
