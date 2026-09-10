@@ -41,6 +41,8 @@
         .btn-checkin:hover { background-color: #bb2d3b; }
         .btn-checkin:disabled { background-color: #6c757d; cursor: not-allowed; }
         #status { margin-top: 20px; font-weight: bold; font-size: 15px; }
+        .logout-link { display: inline-block; margin-top: 25px; color: #6c757d; text-decoration: none; font-size: 14px; }
+        .logout-link:hover { color: #dc3545; }
     </style>
 </head>
 <body>
@@ -52,6 +54,8 @@
     <button id="checkin-btn" class="btn-checkin" onclick="sendLocation()">📍 Girişi Qeydə Al</button>
 
     <div id="status"></div>
+
+    <a href="/logout" class="logout-link">🚪 Hesabdan Çıxış Et</a>
 </div>
 
 <script>
