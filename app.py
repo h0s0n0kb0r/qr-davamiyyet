@@ -149,7 +149,6 @@ def check_in():
     cursor.execute('SELECT name, registered_device FROM users WHERE email = ?', (email,))
     row = cursor.fetchone()
 
-    # Əgər istifadəçi və ya token bazadan silinibse, sessiyanı təmizləyib qeydiyyata atırıq
     if not row or row[1] != client_device_id:
         conn.close()
         session.clear()
@@ -225,7 +224,18 @@ def admin_panel():
         WHERE timestamp LIKE ? 
         ORDER BY id DESC
     ''', (f"{selected_date}%",))
-    records = cursor.fetchall()
+    raw_records = cursor.fetchall()
+
+    # --- GECİKMƏ (IS_LATE) YOXLAMASI ---
+    records = []
+    for r in raw_records:
+        dt = datetime.strptime(r[4], "%Y-%m-%d %H:%M:%S")
+        weekday = dt.weekday()  # 6 = Bazar günü
+        limit_hour = 10 if weekday == 6 else 9
+        
+        # Əgər təyin olunan saatdan gecibsə (məsələn 09:01 və ya 10:01)
+        is_late = dt.hour > limit_hour or (dt.hour == limit_hour and dt.minute > 0)
+        records.append(r + (is_late,))
 
     cursor.execute('SELECT id, name, email, registered_device FROM users')
     registered_users = cursor.fetchall()
